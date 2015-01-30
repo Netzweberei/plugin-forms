@@ -1,0 +1,20 @@
+{
+    "name": "nzwbr/herbie-forms",
+    "homepage": "http://www.netzweberei.de",
+    "description": "Herbie Plugin Forms",
+    "keywords": ["herbie", "plugin", "forms"],
+    "type": "herbie-plugin",
+    "require": {
+        "getherbie/herbie": "dev-master",
+        "symfony/form": "2.*",
+        "symfony/validator": "2.*",
+        "symfony/config": "2.*",
+        "symfony/translation": "2.*",
+        "symfony/twig-bridge": "2.*",
+    },
+    "autoload": {
+        "psr-4": {
+            "herbie\\plugin\\forms\\": ""
+        }
+    } 
+}

@@ -26,19 +26,19 @@ use Symfony\Bridge\Twig\Form\TwigRendererEngine;
 use Symfony\Component\Form\Forms;
 use Symfony\Component\Form\Extension\Validator\ValidatorExtension;
 use Symfony\Component\Form\Extension\Csrf\CsrfExtension;
-use Symfony\Component\Form\Extension\Csrf\CsrfProvider\DefaultCsrfProvider;
+use Symfony\Component\Security\Csrf\CsrfTokenManager;
 use Symfony\Component\Translation\Translator;
 use Symfony\Component\Translation\Loader\XliffFileLoader;
 use Symfony\Bridge\Twig\Extension\TranslationExtension;
 use Symfony\Bridge\Twig\Extension\FormExtension;
 use Symfony\Bridge\Twig\Form\TwigRenderer;
 use Symfony\Component\Yaml\Yaml;
-    
+
 class FormsExtension extends \Twig_Extension
 {
     /**
-    * @var Application
-    */
+     * @var Application
+     */
     protected $app;
 
     /**
@@ -104,16 +104,17 @@ class FormsExtension extends \Twig_Extension
         if (empty($wrap)) {
             return $content;
         }
-        return sprintf('<div class="form-%s">%s</div>', $path, $content);
+        return sprintf('<div class="form-%s">%s</div>', $wrap, $content);
     }
 
     public function renderForm($form) {
 
         $alias = $this->app['alias'];
-        $path  = $this->app['menu']->getItem($this->app['route'])->getPath();
+        $pagePath   = $this->app['menu']->getItem($this->app['route'])->getPath();
+        $pluginPath = $alias->get('@plugin');
 
         $formsPage = new \Herbie\Loader\PageLoader($alias);
-        $formsData = $formsPage->load($path);
+        $formsData = $formsPage->load($pagePath);
 
         if(!$formsData['data'][$form]) return;
         else $defForm = $formsData['data'][$form];
@@ -122,16 +123,15 @@ class FormsExtension extends \Twig_Extension
         if(!defined('CSRF_SECRET_'.$form)) define('CSRF_SECRET_'.$form, 'c2ioeEU1n48QF2WsHGWd2HmiuUUT6dxr');
         if(!defined('DEFAULT_FORM_THEME')) define('DEFAULT_FORM_THEME', 'form_div_layout.html.twig');
 
-        if(!defined('VENDOR_DIR')) define('VENDOR_DIR', realpath($this->webPath.DS.'..'.DS.'..'.DS.'vendor'));
+        if(!defined('VENDOR_DIR')) define('VENDOR_DIR', realpath($this->app->vendorDir));
         if(!defined('VENDOR_FORM_DIR')) define('VENDOR_FORM_DIR', VENDOR_DIR.DS.'symfony'.DS.'form'.DS.'Symfony'.DS.'Component'.DS.'Form');
         if(!defined('VENDOR_VALIDATOR_DIR')) define('VENDOR_VALIDATOR_DIR', VENDOR_DIR.DS.'symfony'.DS.'validator'.DS.'Symfony'.DS.'Component'.DS.'Validator');
         if(!defined('VENDOR_TWIG_BRIDGE_DIR')) define('VENDOR_TWIG_BRIDGE_DIR', VENDOR_DIR.DS.'symfony'.DS.'twig-bridge'.DS.'Symfony'.DS.'Bridge'.DS.'Twig');
-        if(!defined('VIEWS_DIR')) define('VIEWS_DIR', $this->app['sitePath'].'/layouts/views');
-
-        require VENDOR_DIR . DS .'autoload.php';
+        if(!defined('VIEWS_DIR')) define('VIEWS_DIR', $pluginPath.'/forms/views');
 
         // Set up the CSRF provider
-        $csrfProvider = new DefaultCsrfProvider(constant('CSRF_SECRET_'.$form));
+        $csrfProvider = new CsrfTokenManager();
+        $csrfProvider->refreshToken(constant('CSRF_SECRET_'.$form));
 
         // Set up the Validator component
         $validator = Validation::createValidator();
@@ -145,8 +145,8 @@ class FormsExtension extends \Twig_Extension
         // Set up Twig
         $twig = new Twig_Environment(
             new Twig_Loader_Filesystem(array(
-                    VIEWS_DIR,
-                    VENDOR_TWIG_BRIDGE_DIR.DS.'Resources'.DS.'views'.DS.'Form',
+                VIEWS_DIR,
+                VENDOR_TWIG_BRIDGE_DIR.DS.'Resources'.DS.'views'.DS.'Form',
             )),
             [
                 'debug' => $this->app['config']->get('twig.debug'),
@@ -185,7 +185,7 @@ class FormsExtension extends \Twig_Extension
         $form = $formBuilder->getForm();
 
         if (isset($_POST[$form->getName()])) {
-            $form->bind($_POST[$form->getName()]);
+            $form->submit($_POST[$form->getName()]);
 
             if ($form->isValid()) {
 //                var_dump('VALID', $form->getData());

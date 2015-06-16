@@ -21,6 +21,7 @@ use Twig_Environment;
 use Twig_Extension_Debug;
 use Twig_Loader_Chain;
 use Twig_Loader_Filesystem;
+use Symfony\Component\Validator\ValidatorBuilder;
 use Symfony\Component\Validator\Validation;
 use Symfony\Bridge\Twig\Form\TwigRendererEngine;
 use Symfony\Component\Form\Forms;
@@ -133,14 +134,18 @@ class FormsExtension extends \Twig_Extension
         $csrfProvider = new CsrfTokenManager();
         $csrfProvider->refreshToken(constant('CSRF_SECRET_'.$form));
 
-        // Set up the Validator component
-        $validator = Validation::createValidator();
-
         // Set up the Translation component
-        $translator = new Translator('en');
+        $lang = $this->app['page']->language != 'default' ? $this->app['page']->language : 'de';
+        $translator = new Translator($lang);
         $translator->addLoader('xlf', new XliffFileLoader());
-        $translator->addResource('xlf', VENDOR_FORM_DIR.DS.'Resources'.DS.'translations'.DS.'validators.de.xlf', 'en', 'validators');
-        $translator->addResource('xlf', VENDOR_VALIDATOR_DIR.DS.'Resources'.DS.'translations'.DS.'validators.de.xlf', 'en', 'validators');
+        $translator->addResource('xlf', VENDOR_FORM_DIR.DS.'Resources'.DS.'translations'.DS.'validators.'.$lang.'.xlf', $lang, 'validators');
+        $translator->addResource('xlf', VENDOR_VALIDATOR_DIR.DS.'Resources'.DS.'translations'.DS.'validators.'.$lang.'.xlf', $lang, 'validators');
+
+        // Set up the Validator component
+        $vb = new ValidatorBuilder();
+        $vb->setTranslator($translator);
+        $vb->setTranslationDomain('validators');
+        $validator = $vb->getValidator();
 
         // Set up Twig
         $twig = new Twig_Environment(

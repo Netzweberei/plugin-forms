@@ -135,7 +135,7 @@ class FormsExtension extends \Twig_Extension
         $csrfProvider->refreshToken(constant('CSRF_SECRET_'.$form));
 
         // Set up the Translation component
-        $lang = $this->app['page']->language != 'default' ? $this->app['page']->language : 'de';
+        $lang = isset($formsData['data']['language']) ? $formsData['data']['language'] : $this->app->language;
         $translator = new Translator($lang);
         $translator->addLoader('xlf', new XliffFileLoader());
         $translator->addResource('xlf', VENDOR_FORM_DIR.DS.'Resources'.DS.'translations'.DS.'validators.'.$lang.'.xlf', $lang, 'validators');
